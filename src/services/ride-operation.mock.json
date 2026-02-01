@@ -1,0 +1,86 @@
+{
+  "incomingRide": {
+    "id": "ride_99",
+    "distance": "5.2 km",
+    "duration": "12 min",
+    "grossValue": 40.00,
+    "netValue": 28.00,
+    "pets": [
+      {
+        "name": "Rex",
+        "size": "Grande",
+        "type": "dog"
+      },
+      {
+        "name": "Nina",
+        "size": "Pequeno",
+        "type": "cat"
+      }
+    ],
+    "origin": {
+      "address": "Rua das Flores, 123 - Jardim Paulista",
+      "short": "Rua das Flores, 123"
+    },
+    "destination": {
+      "address": "Av. Brasil, 456 - Centro",
+      "short": "Av. Brasil, 456"
+    },
+    "passenger": {
+      "name": "Maria Silva",
+      "photo": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
+      "rating": 4.8
+    }
+  },
+  "wallet": {
+    "balance": 150.50,
+    "pendingBalance": 28.00,
+    "totalEarnings": 1250.00,
+    "totalRides": 45,
+    "history": [
+      {
+        "id": "txn_001",
+        "rideId": "ride_98",
+        "date": "2026-02-01T18:30:00",
+        "dateLabel": "Hoje, 18:30",
+        "gross": 50.00,
+        "net": 35.00,
+        "fee": 15.00,
+        "destination": "Shopping Ibirapuera",
+        "status": "completed"
+      },
+      {
+        "id": "txn_002",
+        "rideId": "ride_97",
+        "date": "2026-02-01T15:45:00",
+        "dateLabel": "Hoje, 15:45",
+        "gross": 35.00,
+        "net": 24.50,
+        "fee": 10.50,
+        "destination": "Aeroporto Congonhas",
+        "status": "completed"
+      },
+      {
+        "id": "txn_003",
+        "rideId": "ride_96",
+        "date": "2026-01-31T20:00:00",
+        "dateLabel": "Ontem, 20:00",
+        "gross": 42.00,
+        "net": 29.40,
+        "fee": 12.60,
+        "destination": "Hospital Sírio-Libanês",
+        "status": "completed"
+      },
+      {
+        "id": "txn_004",
+        "rideId": "ride_95",
+        "date": "2026-01-31T14:20:00",
+        "dateLabel": "Ontem, 14:20",
+        "gross": 28.00,
+        "net": 19.60,
+        "fee": 8.40,
+        "destination": "Parque do Ibirapuera",
+        "status": "completed"
+      }
+    ]
+  }
+}

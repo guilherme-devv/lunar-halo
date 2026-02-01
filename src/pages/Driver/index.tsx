@@ -1,13 +1,21 @@
 import { useState } from 'react';
-import { AlertTriangle, Power, Star } from 'lucide-react';
+import { AlertTriangle, Power, Star, Wallet } from 'lucide-react';
 import { DriverProvider, useDriver } from '../../context';
-import { OnboardingTimeline, TrainingPlayer } from '../../components';
+import {
+  OnboardingTimeline,
+  TrainingPlayer,
+  IncomingRequest,
+  ActiveRideManager,
+  DriverWallet,
+  type IncomingRide,
+} from '../../components';
 import {
   RegistrationStep,
   EmpathyTestStep,
   PaymentStep,
   KitInstallationStep,
 } from '../../components/OnboardingSteps';
+import rideOperationData from '../../services/ride-operation.mock.json';
 import {
   DashboardWrapper,
   DashboardHeader,
@@ -31,9 +39,47 @@ import {
   StatValue,
   StatLabel,
 } from './styles';
+import styled from 'styled-components';
 
-type View = 'dashboard' | 'training';
+type View = 'dashboard' | 'training' | 'wallet' | 'active_ride';
 type StepModal = 'registration' | 'empathyTest' | 'payment' | 'kitInstallation' | null;
+
+const WalletButton = styled.button`
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+  background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+  color: white;
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius.full};
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.xs};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  font-weight: ${({ theme }) => theme.typography.weights.medium};
+  cursor: pointer;
+  transition: transform 0.2s;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+`;
+
+const SimulateButton = styled.button`
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing.md};
+  margin-top: ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.text.secondary};
+  border: 2px dashed ${({ theme }) => theme.colors.text.tertiary};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  font-size: ${({ theme }) => theme.typography.sizes.sm};
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.primary};
+    color: ${({ theme }) => theme.colors.primary};
+  }
+`;
 
 function DriverDashboardContent() {
   const { state, setOnline, completeStep, canGoOnline, isTrainingComplete } = useDriver();
@@ -41,6 +87,8 @@ function DriverDashboardContent() {
 
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [activeStepModal, setActiveStepModal] = useState<StepModal>(null);
+  const [showIncomingRequest, setShowIncomingRequest] = useState(false);
+  const [activeRide, setActiveRide] = useState<IncomingRide | null>(null);
 
   const handleToggleOnline = () => {
     if (!canGoOnline) return;
@@ -82,6 +130,28 @@ function DriverDashboardContent() {
     return 'Em aprovação';
   };
 
+  // Simulate incoming ride
+  const handleSimulateRide = () => {
+    setShowIncomingRequest(true);
+  };
+
+  const handleAcceptRide = (rideId: string) => {
+    console.log('Ride accepted:', rideId);
+    setShowIncomingRequest(false);
+    setActiveRide(rideOperationData.incomingRide as IncomingRide);
+    setCurrentView('active_ride');
+  };
+
+  const handleDeclineRide = (rideId: string) => {
+    console.log('Ride declined:', rideId);
+    setShowIncomingRequest(false);
+  };
+
+  const handleRideComplete = () => {
+    setActiveRide(null);
+    setCurrentView('dashboard');
+  };
+
   // Training View
   if (currentView === 'training') {
     return (
@@ -89,6 +159,31 @@ function DriverDashboardContent() {
         onBack={() => setCurrentView('dashboard')}
         onComplete={handleTrainingComplete}
       />
+    );
+  }
+
+  // Wallet View
+  if (currentView === 'wallet') {
+    return <DriverWallet onBack={() => setCurrentView('dashboard')} />;
+  }
+
+  // Active Ride View
+  if (currentView === 'active_ride' && activeRide) {
+    return (
+      <DashboardWrapper>
+        <DashboardHeader>
+          <DriverAvatar src={driver.photo} alt={driver.name} />
+          <DriverInfo>
+            <DriverName>Em corrida</DriverName>
+            <DriverStatus $variant="online">Ocupado</DriverStatus>
+          </DriverInfo>
+        </DashboardHeader>
+
+        <ActiveRideManager
+          ride={activeRide}
+          onComplete={handleRideComplete}
+        />
+      </DashboardWrapper>
     );
   }
 
@@ -105,6 +200,13 @@ function DriverDashboardContent() {
               {getStatusText()}
             </DriverStatus>
           </DriverInfo>
+
+          {isTrainingComplete && (
+            <WalletButton onClick={() => setCurrentView('wallet')}>
+              <Wallet size={16} />
+              Carteira
+            </WalletButton>
+          )}
         </DashboardHeader>
 
         <DashboardContent>
@@ -175,10 +277,25 @@ function DriverDashboardContent() {
                   <StatLabel>Pets Transportados</StatLabel>
                 </StatCard>
               </StatsGrid>
+
+              {isOnline && (
+                <SimulateButton onClick={handleSimulateRide}>
+                  🔔 Simular Nova Corrida (Demo)
+                </SimulateButton>
+              )}
             </>
           )}
         </DashboardContent>
       </DashboardWrapper>
+
+      {/* Incoming Request Overlay */}
+      {showIncomingRequest && (
+        <IncomingRequest
+          ride={rideOperationData.incomingRide as IncomingRide}
+          onAccept={handleAcceptRide}
+          onDecline={handleDeclineRide}
+        />
+      )}
 
       {/* Step Modals */}
       {activeStepModal === 'registration' && (

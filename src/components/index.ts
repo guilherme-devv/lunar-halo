@@ -46,3 +46,12 @@ export type { OnboardingTimelineProps } from './OnboardingTimeline';
 
 export { TrainingPlayer } from './TrainingPlayer';
 export type { TrainingPlayerProps } from './TrainingPlayer';
+
+export { IncomingRequest } from './IncomingRequest';
+export type { IncomingRequestProps, IncomingRide } from './IncomingRequest';
+
+export { ActiveRideManager } from './ActiveRideManager';
+export type { ActiveRideManagerProps, RideState } from './ActiveRideManager';
+
+export { DriverWallet } from './DriverWallet';
+export type { DriverWalletProps } from './DriverWallet';
