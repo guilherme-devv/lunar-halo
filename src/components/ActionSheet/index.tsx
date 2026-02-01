@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useRide, STEP_ORDER, type RideStep } from '../../context';
 import { useRoute, useRideSimulation } from '../../hooks';
-import { processPayment, type PaymentMethod } from '../../services/pricing.mock';
+import { calculateEstimate } from '../../services/pricing.mock';
 import { Button } from '../Button';
 import { LocationInput } from '../LocationInput';
 import { PetSelector } from '../PetSelector';
 import { ScheduleToggle } from '../ScheduleToggle';
 import { RideSummary } from '../RideSummary';
-import { PaymentMethodSelector } from '../PaymentMethodSelector';
+import { PaymentBrick, type PaymentData } from '../PaymentBrick';
 import { SearchingState } from '../SearchingState';
 import { DriverInfo } from '../DriverInfo';
 import { RideFeedback } from '../RideFeedback';
@@ -22,8 +22,6 @@ import {
   StepDot,
   SheetContent,
   SheetFooter,
-  Spinner,
-  ButtonContent,
   ToastOverlay,
   ToastCard,
   ToastIcon,
@@ -35,21 +33,14 @@ const STEP_TITLES: Record<RideStep, string> = {
   LOCATION: 'Para onde vamos, Pet?',
   PETS: 'Quem vai viajar?',
   SCHEDULE: 'Quando?',
-  SUMMARY: 'Confirmar viagem',
-};
-
-const STEP_BUTTONS: Record<RideStep, string> = {
-  LOCATION: 'Próximo',
-  PETS: 'Próximo',
-  SCHEDULE: 'Revisar',
-  SUMMARY: 'Confirmar e Chamar',
+  SUMMARY: 'Pagamento',
 };
 
 export interface ActionSheetProps {
   onDriverPositionChange?: (position: { lat: number; lng: number } | null) => void;
 }
 
-export function ActionSheet({ onDriverPositionChange }: ActionSheetProps) {
+export function ActionSheet({ onDriverPositionChange: _onDriverPositionChange }: ActionSheetProps) {
   const {
     state,
     setOrigin,
@@ -66,9 +57,7 @@ export function ActionSheet({ onDriverPositionChange }: ActionSheetProps) {
     currentStepIndex,
   } = useRide();
 
-  // Payment state
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
-  const [isProcessing, setIsProcessing] = useState(false);
+  // Payment success state
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -80,6 +69,9 @@ export function ActionSheet({ onDriverPositionChange }: ActionSheetProps) {
 
   const distanceKm = route ? route.distance / 1000 : 5;
   const durationMin = route ? route.duration / 60 : undefined;
+
+  // Calculate price
+  const estimate = calculateEstimate(distanceKm, state.selectedPets.length);
 
   // Ride simulation
   const {
@@ -94,46 +86,27 @@ export function ActionSheet({ onDriverPositionChange }: ActionSheetProps) {
     originLng: state.origin?.lng,
   });
 
-  // Notify parent about driver position changes
-  if (onDriverPositionChange) {
-    // This will be called via effect in parent
-  }
+  const handlePaymentSuccess = (paymentData: PaymentData) => {
+    console.log('Payment successful:', paymentData);
+    setSuccessMessage(`Pagamento aprovado via ${paymentData.paymentMethodId}!`);
+    setShowSuccessToast(true);
 
-  const handleNext = async () => {
-    if (state.step === 'SUMMARY') {
-      // Process payment
-      setIsProcessing(true);
-
-      try {
-        const result = await processPayment({
-          method: paymentMethod,
-          amount: 25.00,
-          rideId: `ride_${Date.now()}`,
-        });
-
-        if (result.success) {
-          setSuccessMessage(result.message);
-          setShowSuccessToast(true);
-
-          // Start ride simulation after payment
-          setTimeout(() => {
-            setShowSuccessToast(false);
-            startSimulation();
-          }, 2000);
-        }
-      } catch (error) {
-        console.error('Payment failed:', error);
-      } finally {
-        setIsProcessing(false);
-      }
-
-      return;
-    }
-    nextStep();
+    // Start ride simulation after payment
+    setTimeout(() => {
+      setShowSuccessToast(false);
+      startSimulation();
+    }, 2000);
   };
 
-  const handleToastClose = () => {
-    setShowSuccessToast(false);
+  const handlePaymentError = (error: Error) => {
+    console.error('Payment error:', error);
+  };
+
+  const handleNext = () => {
+    // For summary step, we let the PaymentBrick handle the flow
+    if (state.step !== 'SUMMARY') {
+      nextStep();
+    }
   };
 
   const handleCancelRide = () => {
@@ -154,8 +127,6 @@ export function ActionSheet({ onDriverPositionChange }: ActionSheetProps) {
         return canProceedFromPets;
       case 'SCHEDULE':
         return canProceedFromSchedule;
-      case 'SUMMARY':
-        return !isProcessing;
       default:
         return false;
     }
@@ -234,10 +205,11 @@ export function ActionSheet({ onDriverPositionChange }: ActionSheetProps) {
               distanceKm={distanceKm}
               durationMin={durationMin}
             />
-            <div style={{ marginTop: 16 }}>
-              <PaymentMethodSelector
-                selectedMethod={paymentMethod}
-                onMethodChange={setPaymentMethod}
+            <div style={{ marginTop: 24 }}>
+              <PaymentBrick
+                amount={estimate.total}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
               />
             </div>
           </>
@@ -247,6 +219,9 @@ export function ActionSheet({ onDriverPositionChange }: ActionSheetProps) {
     }
   };
 
+  // Don't show footer button on SUMMARY step (PaymentBrick has its own button)
+  const showFooterButton = state.step !== 'SUMMARY';
+
   return (
     <>
       <SheetWrapper>
@@ -254,7 +229,7 @@ export function ActionSheet({ onDriverPositionChange }: ActionSheetProps) {
 
         <SheetHeader>
           {currentStepIndex > 0 && (
-            <BackButton onClick={prevStep} aria-label="Voltar" disabled={isProcessing}>
+            <BackButton onClick={prevStep} aria-label="Voltar">
               <ArrowLeft size={20} />
             </BackButton>
           )}
@@ -274,31 +249,24 @@ export function ActionSheet({ onDriverPositionChange }: ActionSheetProps) {
           {renderStepContent()}
         </SheetContent>
 
-        <SheetFooter>
-          <Button
-            fullWidth
-            size="lg"
-            onClick={handleNext}
-            disabled={!canProceed()}
-          >
-            <ButtonContent>
-              {isProcessing ? (
-                <>
-                  <Spinner />
-                  Processando...
-                </>
-              ) : (
-                STEP_BUTTONS[state.step]
-              )}
-            </ButtonContent>
-          </Button>
-        </SheetFooter>
+        {showFooterButton && (
+          <SheetFooter>
+            <Button
+              fullWidth
+              size="lg"
+              onClick={handleNext}
+              disabled={!canProceed()}
+            >
+              Próximo
+            </Button>
+          </SheetFooter>
+        )}
       </SheetWrapper>
 
       {/* Success Toast */}
       {showSuccessToast && (
-        <ToastOverlay onClick={handleToastClose}>
-          <ToastCard onClick={(e) => e.stopPropagation()}>
+        <ToastOverlay>
+          <ToastCard>
             <ToastIcon>
               <Check size={32} />
             </ToastIcon>

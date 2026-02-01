@@ -37,3 +37,6 @@ export type { DriverInfoProps } from './DriverInfo';
 
 export { RideFeedback } from './RideFeedback';
 export type { RideFeedbackProps } from './RideFeedback';
+
+export { PaymentBrick } from './PaymentBrick';
+export type { PaymentBrickProps, PaymentData } from './PaymentBrick';
