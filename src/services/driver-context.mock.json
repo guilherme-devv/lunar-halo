@@ -1,0 +1,75 @@
+{
+  "driver": {
+    "id": "drv_carlos_01",
+    "name": "Carlos Eduardo",
+    "email": "carlos@driver.com",
+    "phone": "+55 11 99876-5432",
+    "photo": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+    "cpf": "123.456.789-00",
+    "cnh": "12345678900",
+    "cnhCategory": "B",
+    "vehicle": {
+      "model": "Fiat Fiorino",
+      "plate": "ABC-1234",
+      "year": 2022,
+      "color": "Branco"
+    }
+  },
+  "onboarding": {
+    "currentStep": 5,
+    "steps": {
+      "registration": {
+        "status": "completed",
+        "completedAt": "2024-01-10T10:00:00Z"
+      },
+      "empathyTest": {
+        "status": "completed",
+        "score": 92,
+        "completedAt": "2024-01-10T11:30:00Z"
+      },
+      "payment": {
+        "status": "approved",
+        "amount": 300,
+        "paymentId": "pay_mp_123456",
+        "method": "pix",
+        "completedAt": "2024-01-10T14:00:00Z"
+      },
+      "kitInstallation": {
+        "status": "approved",
+        "photoUrl": "https://example.com/kit-photo.jpg",
+        "approvedAt": "2024-01-12T09:00:00Z"
+      },
+      "training": {
+        "status": "in_progress",
+        "totalModules": 3,
+        "completedModules": 1,
+        "lastWatchedId": "vid_01",
+        "modules": [
+          {
+            "id": "vid_01",
+            "title": "Comportamento Animal no Carro",
+            "description": "Aprenda a identificar sinais de estresse e como acalmar os pets durante a viagem.",
+            "duration": "15:30",
+            "completed": true,
+            "completedAt": "2024-01-13T10:00:00Z"
+          },
+          {
+            "id": "vid_02",
+            "title": "Uso do Cinto de Segurança Pet",
+            "description": "Como usar corretamente o cinto de segurança para pets e a caixa de transporte.",
+            "duration": "12:45",
+            "completed": false
+          },
+          {
+            "id": "vid_03",
+            "title": "Regras de Limpeza e Higienização",
+            "description": "Protocolo de limpeza do veículo entre viagens e cuidados com alérgicos.",
+            "duration": "10:20",
+            "completed": false
+          }
+        ]
+      }
+    }
+  },
+  "driverStatus": "onboarding"
+}

@@ -40,3 +40,9 @@ export type { RideFeedbackProps } from './RideFeedback';
 
 export { PaymentBrick } from './PaymentBrick';
 export type { PaymentBrickProps, PaymentData } from './PaymentBrick';
+
+export { OnboardingTimeline } from './OnboardingTimeline';
+export type { OnboardingTimelineProps } from './OnboardingTimeline';
+
+export { TrainingPlayer } from './TrainingPlayer';
+export type { TrainingPlayerProps } from './TrainingPlayer';
