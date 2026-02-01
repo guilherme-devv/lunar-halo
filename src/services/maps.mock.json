@@ -1,0 +1,50 @@
+[
+  {
+    "id": "loc1",
+    "address": "Rua dos Pets, 100 - Centro, São Paulo",
+    "lat": -23.5505,
+    "lng": -46.6333
+  },
+  {
+    "id": "loc2",
+    "address": "Vet Clinic 24h - Paulista",
+    "lat": -23.5614,
+    "lng": -46.6558
+  },
+  {
+    "id": "loc3",
+    "address": "Pet Shop Amigo Fiel - Pinheiros",
+    "lat": -23.5673,
+    "lng": -46.6912
+  },
+  {
+    "id": "loc4",
+    "address": "Parque Ibirapuera - Entrada Principal",
+    "lat": -23.5874,
+    "lng": -46.6576
+  },
+  {
+    "id": "loc5",
+    "address": "Hospital Veterinário Sena Madureira",
+    "lat": -23.5998,
+    "lng": -46.6654
+  },
+  {
+    "id": "loc6",
+    "address": "Clínica Veterinária PetCare - Moema",
+    "lat": -23.6008,
+    "lng": -46.6654
+  },
+  {
+    "id": "loc7",
+    "address": "Banho e Tosa Dog Style - Vila Mariana",
+    "lat": -23.5891,
+    "lng": -46.6358
+  },
+  {
+    "id": "loc8",
+    "address": "Aeroporto de Congonhas - Desembarque",
+    "lat": -23.6261,
+    "lng": -46.6564
+  }
+]

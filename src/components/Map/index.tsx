@@ -178,6 +178,7 @@ export function MapControls({
 export interface MapMarkerProps {
   longitude: number;
   latitude: number;
+  color?: string;
   children?: ReactNode;
   onClick?: () => void;
   draggable?: boolean;
@@ -187,32 +188,26 @@ export interface MapMarkerProps {
 export function MapMarker({
   longitude,
   latitude,
-  children,
+  color = '#3b82f6',
   onClick,
   draggable = false,
   onDragEnd,
 }: MapMarkerProps) {
   const { map, isLoaded } = useMap();
   const markerRef = useRef<maplibregl.Marker | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!map || !isLoaded) return;
 
-    // Create a custom element if children exist
-    const el = document.createElement('div');
-    el.className = 'maplibre-marker';
-    containerRef.current = el;
-
     const marker = new maplibregl.Marker({
-      element: children ? el : undefined,
+      color,
       draggable,
     })
       .setLngLat([longitude, latitude])
       .addTo(map);
 
     if (onClick) {
-      el.addEventListener('click', onClick);
+      marker.getElement().addEventListener('click', onClick);
     }
 
     if (draggable && onDragEnd) {
@@ -228,7 +223,108 @@ export function MapMarker({
       marker.remove();
       markerRef.current = null;
     };
-  }, [map, isLoaded, longitude, latitude, draggable]);
+  }, [map, isLoaded, longitude, latitude, color, draggable, onClick, onDragEnd]);
 
   return null;
 }
+
+// MapRoute component - draws a line between points
+export interface MapRouteProps {
+  coordinates: [number, number][];
+  color?: string;
+  width?: number;
+  dashArray?: [number, number];
+}
+
+export function MapRoute({
+  coordinates,
+  color = '#EA620B',
+  width = 4,
+  dashArray,
+}: MapRouteProps) {
+  const { map, isLoaded } = useMap();
+  const sourceId = useRef(`route-${Date.now()}`);
+  const layerId = useRef(`route-layer-${Date.now()}`);
+
+  useEffect(() => {
+    if (!map || !isLoaded || coordinates.length < 2) return;
+
+    const source = sourceId.current;
+    const layer = layerId.current;
+
+    // Wait for style to be loaded
+    const addRoute = () => {
+      // Remove existing source/layer if they exist
+      if (map.getLayer(layer)) {
+        map.removeLayer(layer);
+      }
+      if (map.getSource(source)) {
+        map.removeSource(source);
+      }
+
+      // Add route source
+      map.addSource(source, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'LineString',
+            coordinates,
+          },
+        },
+      });
+
+      // Add route layer
+      map.addLayer({
+        id: layer,
+        type: 'line',
+        source,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': color,
+          'line-width': width,
+          ...(dashArray && { 'line-dasharray': dashArray }),
+        },
+      });
+    };
+
+    if (map.isStyleLoaded()) {
+      addRoute();
+    } else {
+      map.once('style.load', addRoute);
+    }
+
+    return () => {
+      if (map.getLayer(layer)) {
+        map.removeLayer(layer);
+      }
+      if (map.getSource(source)) {
+        map.removeSource(source);
+      }
+    };
+  }, [map, isLoaded, coordinates, color, width, dashArray]);
+
+  // Update route when coordinates change
+  useEffect(() => {
+    if (!map || !isLoaded || coordinates.length < 2) return;
+
+    const source = map.getSource(sourceId.current) as maplibregl.GeoJSONSource;
+    if (source) {
+      source.setData({
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: 'LineString',
+          coordinates,
+        },
+      });
+    }
+  }, [map, isLoaded, coordinates]);
+
+  return null;
+}
+

@@ -1,56 +1,148 @@
-import { MapPin, Navigation } from 'lucide-react';
-import { useTheme } from 'styled-components';
-import { SheetWrapper, SheetHandle, SheetTitle, InputsContainer } from './styles';
-import { FakeInput } from '../FakeInput';
+import { ArrowLeft } from 'lucide-react';
+import { useRide, STEP_ORDER, type RideStep } from '../../context';
 import { Button } from '../Button';
+import { LocationInput } from '../LocationInput';
+import { PetSelector } from '../PetSelector';
+import { ScheduleToggle } from '../ScheduleToggle';
+import { RideSummary } from '../RideSummary';
+import {
+  SheetWrapper,
+  SheetHandle,
+  SheetHeader,
+  BackButton,
+  SheetTitle,
+  StepIndicator,
+  StepDot,
+  SheetContent,
+  SheetFooter,
+} from './styles';
 
-export interface ActionSheetProps {
-  title?: string;
-  onOriginClick?: () => void;
-  onDestinationClick?: () => void;
-  onSubmit?: () => void;
-  submitLabel?: string;
-  isLoading?: boolean;
-}
+const STEP_TITLES: Record<RideStep, string> = {
+  LOCATION: 'Para onde vamos, Pet?',
+  PETS: 'Quem vai viajar?',
+  SCHEDULE: 'Quando?',
+  SUMMARY: 'Confirmar viagem',
+};
 
-export function ActionSheet({
-  title = 'Para onde vamos, Pet?',
-  onOriginClick,
-  onDestinationClick,
-  onSubmit,
-  submitLabel = 'Solicitar Viagem',
-  isLoading = false,
-}: ActionSheetProps) {
-  const theme = useTheme();
+const STEP_BUTTONS: Record<RideStep, string> = {
+  LOCATION: 'Próximo',
+  PETS: 'Próximo',
+  SCHEDULE: 'Revisar',
+  SUMMARY: 'Solicitar Viagem',
+};
+
+export function ActionSheet() {
+  const {
+    state,
+    setOrigin,
+    setDestination,
+    togglePet,
+    toggleImmediate,
+    setDate,
+    nextStep,
+    prevStep,
+    reset,
+    canProceedFromLocation,
+    canProceedFromPets,
+    canProceedFromSchedule,
+    currentStepIndex,
+  } = useRide();
+
+  const handleNext = () => {
+    if (state.step === 'SUMMARY') {
+      // Submit ride request
+      console.log('Submitting ride request:', state);
+      alert('Viagem solicitada com sucesso! 🐾');
+      reset();
+      return;
+    }
+    nextStep();
+  };
+
+  const canProceed = (): boolean => {
+    switch (state.step) {
+      case 'LOCATION':
+        return canProceedFromLocation;
+      case 'PETS':
+        return canProceedFromPets;
+      case 'SCHEDULE':
+        return canProceedFromSchedule;
+      case 'SUMMARY':
+        return true;
+      default:
+        return false;
+    }
+  };
+
+  const renderStepContent = () => {
+    switch (state.step) {
+      case 'LOCATION':
+        return (
+          <LocationInput
+            origin={state.origin}
+            destination={state.destination}
+            onOriginChange={setOrigin}
+            onDestinationChange={setDestination}
+          />
+        );
+      case 'PETS':
+        return (
+          <PetSelector
+            selectedPets={state.selectedPets}
+            onTogglePet={togglePet}
+          />
+        );
+      case 'SCHEDULE':
+        return (
+          <ScheduleToggle
+            schedule={state.schedule}
+            onToggleImmediate={toggleImmediate}
+            onDateChange={setDate}
+          />
+        );
+      case 'SUMMARY':
+        return <RideSummary state={state} />;
+      default:
+        return null;
+    }
+  };
 
   return (
     <SheetWrapper>
       <SheetHandle />
-      <SheetTitle>{title}</SheetTitle>
 
-      <InputsContainer>
-        <FakeInput
-          icon={Navigation}
-          placeholder="Local de Partida"
-          iconColor={theme.colors.primary}
-          onClick={onOriginClick}
-        />
-        <FakeInput
-          icon={MapPin}
-          placeholder="Para onde?"
-          iconColor={theme.colors.secondary}
-          onClick={onDestinationClick}
-        />
-      </InputsContainer>
+      <SheetHeader>
+        {currentStepIndex > 0 && (
+          <BackButton onClick={prevStep} aria-label="Voltar">
+            <ArrowLeft size={20} />
+          </BackButton>
+        )}
+        <SheetTitle>{STEP_TITLES[state.step]}</SheetTitle>
+        <StepIndicator>
+          {STEP_ORDER.map((step, index) => (
+            <StepDot
+              key={step}
+              $isActive={index === currentStepIndex}
+              $isCompleted={index < currentStepIndex}
+            />
+          ))}
+        </StepIndicator>
+      </SheetHeader>
 
-      <Button
-        fullWidth
-        size="lg"
-        onClick={onSubmit}
-        disabled={isLoading}
-      >
-        {isLoading ? 'Carregando...' : submitLabel}
-      </Button>
+      <SheetContent>
+        {renderStepContent()}
+      </SheetContent>
+
+      <SheetFooter>
+        <Button
+          fullWidth
+          size="lg"
+          onClick={handleNext}
+          disabled={!canProceed()}
+        >
+          {STEP_BUTTONS[state.step]}
+        </Button>
+      </SheetFooter>
     </SheetWrapper>
   );
 }
