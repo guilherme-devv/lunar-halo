@@ -57,6 +57,7 @@ export interface DriverState {
 
 // Actions
 type DriverAction =
+  | { type: 'COMPLETE_STEP'; step: 'registration' | 'empathyTest' | 'payment' | 'kitInstallation' }
   | { type: 'COMPLETE_MODULE'; moduleId: string }
   | { type: 'COMPLETE_TRAINING' }
   | { type: 'SET_ONLINE'; isOnline: boolean }
@@ -70,9 +71,51 @@ const initialState: DriverState = {
   isOnline: false,
 };
 
+// Step order for progression
+const STEP_ORDER = ['registration', 'empathyTest', 'payment', 'kitInstallation', 'training'] as const;
+
 // Reducer
 function driverReducer(state: DriverState, action: DriverAction): DriverState {
   switch (action.type) {
+    case 'COMPLETE_STEP': {
+      const stepIndex = STEP_ORDER.indexOf(action.step);
+      const nextStepIndex = stepIndex + 1;
+
+      return {
+        ...state,
+        onboarding: {
+          ...state.onboarding,
+          currentStep: nextStepIndex + 1,
+          steps: {
+            ...state.onboarding.steps,
+            [action.step]: {
+              ...state.onboarding.steps[action.step],
+              status: action.step === 'payment' || action.step === 'kitInstallation' ? 'approved' : 'completed',
+              completedAt: new Date().toISOString(),
+            },
+            // Set next step to in_progress if it exists
+            ...(nextStepIndex < STEP_ORDER.length && STEP_ORDER[nextStepIndex] !== 'training'
+              ? {
+                [STEP_ORDER[nextStepIndex]]: {
+                  ...state.onboarding.steps[STEP_ORDER[nextStepIndex] as keyof typeof state.onboarding.steps],
+                  status: 'in_progress',
+                },
+              }
+              : {}),
+            // If moving to training, set it to in_progress
+            ...(STEP_ORDER[nextStepIndex] === 'training'
+              ? {
+                training: {
+                  ...state.onboarding.steps.training,
+                  status: 'in_progress',
+                },
+              }
+              : {}),
+          },
+        },
+      };
+    }
+
     case 'COMPLETE_MODULE': {
       const modules = state.onboarding.steps.training.modules.map((mod) =>
         mod.id === action.moduleId
@@ -124,7 +167,7 @@ function driverReducer(state: DriverState, action: DriverAction): DriverState {
 
     case 'SET_ONLINE':
       if (state.driverStatus !== 'active' && state.driverStatus !== 'online' && state.driverStatus !== 'offline') {
-        return state; // Can't go online if not active
+        return state;
       }
       return {
         ...state,
@@ -143,6 +186,7 @@ function driverReducer(state: DriverState, action: DriverAction): DriverState {
 // Context
 interface DriverContextType {
   state: DriverState;
+  completeStep: (step: 'registration' | 'empathyTest' | 'payment' | 'kitInstallation') => void;
   completeModule: (moduleId: string) => void;
   completeTraining: () => void;
   setOnline: (isOnline: boolean) => void;
@@ -156,6 +200,10 @@ const DriverContext = createContext<DriverContextType | null>(null);
 // Provider
 export function DriverProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(driverReducer, initialState);
+
+  const completeStep = (step: 'registration' | 'empathyTest' | 'payment' | 'kitInstallation') => {
+    dispatch({ type: 'COMPLETE_STEP', step });
+  };
 
   const completeModule = (moduleId: string) => {
     dispatch({ type: 'COMPLETE_MODULE', moduleId });
@@ -176,14 +224,17 @@ export function DriverProvider({ children }: { children: ReactNode }) {
   const canGoOnline = state.driverStatus === 'active' || state.driverStatus === 'online' || state.driverStatus === 'offline';
 
   const trainingProgress =
-    (state.onboarding.steps.training.completedModules /
-      state.onboarding.steps.training.totalModules) *
-    100;
+    state.onboarding.steps.training.totalModules > 0
+      ? (state.onboarding.steps.training.completedModules /
+        state.onboarding.steps.training.totalModules) *
+      100
+      : 0;
 
   return (
     <DriverContext.Provider
       value={{
         state,
+        completeStep,
         completeModule,
         completeTraining,
         setOnline,

@@ -1,4 +1,4 @@
-import { Check, Circle, CreditCard, FileCheck, GraduationCap, Play, UserCheck } from 'lucide-react';
+import { Check, Circle, CreditCard, FileCheck, GraduationCap, Play, UserCheck, Wrench } from 'lucide-react';
 import { useDriver } from '../../context';
 import { formatCurrency } from '../../services/pricing.mock';
 import {
@@ -17,14 +17,16 @@ import {
 
 export interface OnboardingTimelineProps {
   onStartTraining: () => void;
+  onStepAction?: (step: string) => void;
 }
 
 interface StepConfig {
   id: number;
-  key: string;
+  key: 'registration' | 'empathyTest' | 'payment' | 'kitInstallation' | 'training';
   title: string;
   description: string;
   icon: typeof Check;
+  actionLabel: string;
 }
 
 const STEPS: StepConfig[] = [
@@ -32,8 +34,9 @@ const STEPS: StepConfig[] = [
     id: 1,
     key: 'registration',
     title: 'Cadastro Inicial',
-    description: 'Seus dados pessoais e do veículo foram registrados.',
+    description: 'Preencha seus dados pessoais e do veículo.',
     icon: UserCheck,
+    actionLabel: 'Completar Cadastro',
   },
   {
     id: 2,
@@ -41,6 +44,7 @@ const STEPS: StepConfig[] = [
     title: 'Teste de Empatia',
     description: 'Avaliação de perfil para trabalhar com animais.',
     icon: FileCheck,
+    actionLabel: 'Iniciar Teste',
   },
   {
     id: 3,
@@ -48,13 +52,15 @@ const STEPS: StepConfig[] = [
     title: 'Taxa de Adesão',
     description: `Pagamento de ${formatCurrency(300)} via Mercado Pago.`,
     icon: CreditCard,
+    actionLabel: 'Pagar Agora',
   },
   {
     id: 4,
     key: 'kitInstallation',
     title: 'Instalação do Kit de Segurança',
     description: 'Cinto pet, caixa de transporte e tapete higiênico.',
-    icon: Check,
+    icon: Wrench,
+    actionLabel: 'Enviar Foto do Kit',
   },
   {
     id: 5,
@@ -62,15 +68,16 @@ const STEPS: StepConfig[] = [
     title: 'Capacitação & Treinamento',
     description: 'Complete as aulas obrigatórias para começar.',
     icon: GraduationCap,
+    actionLabel: 'Iniciar Aulas',
   },
 ];
 
-export function OnboardingTimeline({ onStartTraining }: OnboardingTimelineProps) {
+export function OnboardingTimeline({ onStartTraining, onStepAction }: OnboardingTimelineProps) {
   const { state, trainingProgress } = useDriver();
   const { onboarding } = state;
 
   const getStepStatus = (step: StepConfig) => {
-    const stepData = onboarding.steps[step.key as keyof typeof onboarding.steps];
+    const stepData = onboarding.steps[step.key];
     if (!stepData) return 'pending';
 
     if (stepData.status === 'completed' || stepData.status === 'approved') {
@@ -82,25 +89,29 @@ export function OnboardingTimeline({ onStartTraining }: OnboardingTimelineProps)
     return 'pending';
   };
 
+  const handleStepAction = (step: StepConfig) => {
+    if (step.key === 'training') {
+      onStartTraining();
+    } else if (onStepAction) {
+      onStepAction(step.key);
+    }
+  };
+
   const getStatusBadge = (step: StepConfig) => {
     const status = getStepStatus(step);
+    const stepData = onboarding.steps[step.key];
 
     if (status === 'completed') {
-      return <TimelineStatus $variant="success">✓ Concluído</TimelineStatus>;
-    }
-
-    if (step.key === 'payment') {
-      const payment = onboarding.steps.payment;
-      if (payment.status === 'approved') {
+      if (step.key === 'empathyTest' && 'score' in stepData && stepData.score) {
+        return <TimelineStatus $variant="success">✓ Aprovado ({stepData.score} pts)</TimelineStatus>;
+      }
+      if (step.key === 'payment') {
         return <TimelineStatus $variant="success">✓ Pago</TimelineStatus>;
       }
-    }
-
-    if (step.key === 'kitInstallation') {
-      const kit = onboarding.steps.kitInstallation;
-      if (kit.status === 'approved') {
+      if (step.key === 'kitInstallation') {
         return <TimelineStatus $variant="success">✓ Aprovado</TimelineStatus>;
       }
+      return <TimelineStatus $variant="success">✓ Concluído</TimelineStatus>;
     }
 
     if (status === 'active') {
@@ -142,11 +153,17 @@ export function OnboardingTimeline({ onStartTraining }: OnboardingTimelineProps)
                     {onboarding.steps.training.completedModules} de{' '}
                     {onboarding.steps.training.totalModules} aulas concluídas
                   </ProgressText>
-                  <ActionButton onClick={onStartTraining}>
-                    <Play size={16} />
-                    Continuar Aulas
-                  </ActionButton>
                 </>
+              )}
+
+              {/* Action button for active step */}
+              {isActive && !isCompleted && (
+                <ActionButton onClick={() => handleStepAction(step)}>
+                  <Play size={16} />
+                  {step.key === 'training' && onboarding.steps.training.completedModules > 0
+                    ? 'Continuar Aulas'
+                    : step.actionLabel}
+                </ActionButton>
               )}
             </TimelineContent>
           </TimelineItem>

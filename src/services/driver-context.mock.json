@@ -16,42 +16,32 @@
     }
   },
   "onboarding": {
-    "currentStep": 5,
+    "currentStep": 1,
     "steps": {
       "registration": {
-        "status": "completed",
-        "completedAt": "2024-01-10T10:00:00Z"
+        "status": "in_progress"
       },
       "empathyTest": {
-        "status": "completed",
-        "score": 92,
-        "completedAt": "2024-01-10T11:30:00Z"
+        "status": "pending"
       },
       "payment": {
-        "status": "approved",
-        "amount": 300,
-        "paymentId": "pay_mp_123456",
-        "method": "pix",
-        "completedAt": "2024-01-10T14:00:00Z"
+        "status": "pending",
+        "amount": 300
       },
       "kitInstallation": {
-        "status": "approved",
-        "photoUrl": "https://example.com/kit-photo.jpg",
-        "approvedAt": "2024-01-12T09:00:00Z"
+        "status": "pending"
       },
       "training": {
-        "status": "in_progress",
+        "status": "pending",
         "totalModules": 3,
-        "completedModules": 1,
-        "lastWatchedId": "vid_01",
+        "completedModules": 0,
         "modules": [
           {
             "id": "vid_01",
             "title": "Comportamento Animal no Carro",
             "description": "Aprenda a identificar sinais de estresse e como acalmar os pets durante a viagem.",
             "duration": "15:30",
-            "completed": true,
-            "completedAt": "2024-01-13T10:00:00Z"
+            "completed": false
           },
           {
             "id": "vid_02",
