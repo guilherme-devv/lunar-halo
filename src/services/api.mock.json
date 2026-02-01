@@ -1,0 +1,34 @@
+{
+  "user": {
+    "id": "u1",
+    "name": "Tutor",
+    "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=EA620B"
+  },
+  "pets": [
+    {
+      "id": "p1",
+      "name": "Buddy",
+      "size": "medium",
+      "species": "dog",
+      "breed": "Golden Retriever"
+    },
+    {
+      "id": "p2",
+      "name": "Luna",
+      "size": "small",
+      "species": "cat",
+      "breed": "Siamese"
+    }
+  ],
+  "rideParams": {
+    "pricePerKm": 2.5,
+    "minPrice": 10.0,
+    "currency": "BRL"
+  },
+  "defaultLocation": {
+    "lat": -23.5505,
+    "lng": -46.6333,
+    "city": "São Paulo",
+    "state": "SP"
+  }
+}
