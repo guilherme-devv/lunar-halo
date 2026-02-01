@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useRide, STEP_ORDER, type RideStep } from '../../context';
-import { useRoute } from '../../hooks';
+import { useRoute, useRideSimulation } from '../../hooks';
 import { processPayment, type PaymentMethod } from '../../services/pricing.mock';
 import { Button } from '../Button';
 import { LocationInput } from '../LocationInput';
@@ -9,6 +9,9 @@ import { PetSelector } from '../PetSelector';
 import { ScheduleToggle } from '../ScheduleToggle';
 import { RideSummary } from '../RideSummary';
 import { PaymentMethodSelector } from '../PaymentMethodSelector';
+import { SearchingState } from '../SearchingState';
+import { DriverInfo } from '../DriverInfo';
+import { RideFeedback } from '../RideFeedback';
 import {
   SheetWrapper,
   SheetHandle,
@@ -42,7 +45,11 @@ const STEP_BUTTONS: Record<RideStep, string> = {
   SUMMARY: 'Confirmar e Chamar',
 };
 
-export function ActionSheet() {
+export interface ActionSheetProps {
+  onDriverPositionChange?: (position: { lat: number; lng: number } | null) => void;
+}
+
+export function ActionSheet({ onDriverPositionChange }: ActionSheetProps) {
   const {
     state,
     setOrigin,
@@ -74,6 +81,24 @@ export function ActionSheet() {
   const distanceKm = route ? route.distance / 1000 : 5;
   const durationMin = route ? route.duration / 60 : undefined;
 
+  // Ride simulation
+  const {
+    status: rideStatus,
+    driver,
+    estimatedArrival,
+    startSimulation,
+    cancelSimulation,
+    completeRide,
+  } = useRideSimulation({
+    originLat: state.origin?.lat,
+    originLng: state.origin?.lng,
+  });
+
+  // Notify parent about driver position changes
+  if (onDriverPositionChange) {
+    // This will be called via effect in parent
+  }
+
   const handleNext = async () => {
     if (state.step === 'SUMMARY') {
       // Process payment
@@ -82,13 +107,19 @@ export function ActionSheet() {
       try {
         const result = await processPayment({
           method: paymentMethod,
-          amount: 25.00, // This would come from pricing
+          amount: 25.00,
           rideId: `ride_${Date.now()}`,
         });
 
         if (result.success) {
           setSuccessMessage(result.message);
           setShowSuccessToast(true);
+
+          // Start ride simulation after payment
+          setTimeout(() => {
+            setShowSuccessToast(false);
+            startSimulation();
+          }, 2000);
         }
       } catch (error) {
         console.error('Payment failed:', error);
@@ -103,6 +134,15 @@ export function ActionSheet() {
 
   const handleToastClose = () => {
     setShowSuccessToast(false);
+  };
+
+  const handleCancelRide = () => {
+    cancelSimulation();
+    reset();
+  };
+
+  const handleFeedbackComplete = () => {
+    completeRide();
     reset();
   };
 
@@ -121,6 +161,45 @@ export function ActionSheet() {
     }
   };
 
+  // Ride tracking states - render different content
+  if (rideStatus === 'SEARCHING') {
+    return (
+      <SheetWrapper>
+        <SheetHandle />
+        <SearchingState onCancel={handleCancelRide} />
+      </SheetWrapper>
+    );
+  }
+
+  if (rideStatus === 'DRIVER_FOUND' || rideStatus === 'ARRIVED' || rideStatus === 'ON_RIDE') {
+    return (
+      <SheetWrapper>
+        <SheetHandle />
+        <SheetContent>
+          {driver && (
+            <DriverInfo
+              driver={driver}
+              status={rideStatus}
+              estimatedArrival={estimatedArrival}
+            />
+          )}
+        </SheetContent>
+      </SheetWrapper>
+    );
+  }
+
+  if (rideStatus === 'COMPLETED') {
+    return (
+      <SheetWrapper>
+        <SheetHandle />
+        <SheetContent>
+          <RideFeedback driver={driver} onComplete={handleFeedbackComplete} />
+        </SheetContent>
+      </SheetWrapper>
+    );
+  }
+
+  // Normal wizard flow
   const renderStepContent = () => {
     switch (state.step) {
       case 'LOCATION':
@@ -223,11 +302,8 @@ export function ActionSheet() {
             <ToastIcon>
               <Check size={32} />
             </ToastIcon>
-            <ToastTitle>Viagem Confirmada!</ToastTitle>
+            <ToastTitle>Pagamento Aprovado!</ToastTitle>
             <ToastMessage>{successMessage}</ToastMessage>
-            <Button fullWidth onClick={handleToastClose}>
-              Entendido
-            </Button>
           </ToastCard>
         </ToastOverlay>
       )}
