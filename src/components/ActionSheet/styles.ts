@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
 export const SheetWrapper = styled.div`
   position: fixed;
@@ -11,7 +11,7 @@ export const SheetWrapper = styled.div`
   padding: ${({ theme }) => theme.spacing.lg};
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + ${({ theme }) => theme.spacing.lg});
   z-index: 50;
-  max-height: 70vh;
+  max-height: 75vh;
   display: flex;
   flex-direction: column;
 `;
@@ -109,4 +109,73 @@ export const SheetFooter = styled.div`
   display: flex;
   gap: ${({ theme }) => theme.spacing.md};
   flex-shrink: 0;
+`;
+
+// Spinner animation
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+export const Spinner = styled.div`
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: ${spin} 0.8s linear infinite;
+`;
+
+export const ButtonContent = styled.span`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+`;
+
+// Success Toast
+export const ToastOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: ${({ theme }) => theme.spacing.lg};
+`;
+
+export const ToastCard = styled.div`
+  background: white;
+  border-radius: ${({ theme }) => theme.borderRadius.xl};
+  padding: ${({ theme }) => theme.spacing.xl};
+  text-align: center;
+  max-width: 320px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+`;
+
+export const ToastIcon = styled.div`
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10B981, #059669);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto ${({ theme }) => theme.spacing.lg};
+  color: white;
+`;
+
+export const ToastTitle = styled.h3`
+  font-size: ${({ theme }) => theme.typography.sizes.xl};
+  font-weight: ${({ theme }) => theme.typography.weights.bold};
+  color: ${({ theme }) => theme.colors.text.primary};
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
+`;
+
+export const ToastMessage = styled.p`
+  font-size: ${({ theme }) => theme.typography.sizes.md};
+  color: ${({ theme }) => theme.colors.text.secondary};
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
+  line-height: 1.5;
 `;

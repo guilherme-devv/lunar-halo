@@ -25,3 +25,15 @@ export type { ScheduleToggleProps } from './ScheduleToggle';
 
 export { RideSummary } from './RideSummary';
 export type { RideSummaryProps } from './RideSummary';
+
+export { PaymentMethodSelector } from './PaymentMethodSelector';
+export type { PaymentMethodSelectorProps } from './PaymentMethodSelector';
+
+export { SearchingState } from './SearchingState';
+export type { SearchingStateProps } from './SearchingState';
+
+export { DriverInfo } from './DriverInfo';
+export type { DriverInfoProps } from './DriverInfo';
+
+export { RideFeedback } from './RideFeedback';
+export type { RideFeedbackProps } from './RideFeedback';

@@ -1,10 +1,14 @@
-import { ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Check } from 'lucide-react';
 import { useRide, STEP_ORDER, type RideStep } from '../../context';
+import { useRoute } from '../../hooks';
+import { processPayment, type PaymentMethod } from '../../services/pricing.mock';
 import { Button } from '../Button';
 import { LocationInput } from '../LocationInput';
 import { PetSelector } from '../PetSelector';
 import { ScheduleToggle } from '../ScheduleToggle';
 import { RideSummary } from '../RideSummary';
+import { PaymentMethodSelector } from '../PaymentMethodSelector';
 import {
   SheetWrapper,
   SheetHandle,
@@ -15,6 +19,13 @@ import {
   StepDot,
   SheetContent,
   SheetFooter,
+  Spinner,
+  ButtonContent,
+  ToastOverlay,
+  ToastCard,
+  ToastIcon,
+  ToastTitle,
+  ToastMessage,
 } from './styles';
 
 const STEP_TITLES: Record<RideStep, string> = {
@@ -28,7 +39,7 @@ const STEP_BUTTONS: Record<RideStep, string> = {
   LOCATION: 'Próximo',
   PETS: 'Próximo',
   SCHEDULE: 'Revisar',
-  SUMMARY: 'Solicitar Viagem',
+  SUMMARY: 'Confirmar e Chamar',
 };
 
 export function ActionSheet() {
@@ -48,15 +59,51 @@ export function ActionSheet() {
     currentStepIndex,
   } = useRide();
 
-  const handleNext = () => {
+  // Payment state
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Get route info
+  const { route } = useRoute({
+    origin: state.origin,
+    destination: state.destination,
+  });
+
+  const distanceKm = route ? route.distance / 1000 : 5;
+  const durationMin = route ? route.duration / 60 : undefined;
+
+  const handleNext = async () => {
     if (state.step === 'SUMMARY') {
-      // Submit ride request
-      console.log('Submitting ride request:', state);
-      alert('Viagem solicitada com sucesso! 🐾');
-      reset();
+      // Process payment
+      setIsProcessing(true);
+
+      try {
+        const result = await processPayment({
+          method: paymentMethod,
+          amount: 25.00, // This would come from pricing
+          rideId: `ride_${Date.now()}`,
+        });
+
+        if (result.success) {
+          setSuccessMessage(result.message);
+          setShowSuccessToast(true);
+        }
+      } catch (error) {
+        console.error('Payment failed:', error);
+      } finally {
+        setIsProcessing(false);
+      }
+
       return;
     }
     nextStep();
+  };
+
+  const handleToastClose = () => {
+    setShowSuccessToast(false);
+    reset();
   };
 
   const canProceed = (): boolean => {
@@ -68,7 +115,7 @@ export function ActionSheet() {
       case 'SCHEDULE':
         return canProceedFromSchedule;
       case 'SUMMARY':
-        return true;
+        return !isProcessing;
       default:
         return false;
     }
@@ -101,48 +148,89 @@ export function ActionSheet() {
           />
         );
       case 'SUMMARY':
-        return <RideSummary state={state} />;
+        return (
+          <>
+            <RideSummary
+              state={state}
+              distanceKm={distanceKm}
+              durationMin={durationMin}
+            />
+            <div style={{ marginTop: 16 }}>
+              <PaymentMethodSelector
+                selectedMethod={paymentMethod}
+                onMethodChange={setPaymentMethod}
+              />
+            </div>
+          </>
+        );
       default:
         return null;
     }
   };
 
   return (
-    <SheetWrapper>
-      <SheetHandle />
+    <>
+      <SheetWrapper>
+        <SheetHandle />
 
-      <SheetHeader>
-        {currentStepIndex > 0 && (
-          <BackButton onClick={prevStep} aria-label="Voltar">
-            <ArrowLeft size={20} />
-          </BackButton>
-        )}
-        <SheetTitle>{STEP_TITLES[state.step]}</SheetTitle>
-        <StepIndicator>
-          {STEP_ORDER.map((step, index) => (
-            <StepDot
-              key={step}
-              $isActive={index === currentStepIndex}
-              $isCompleted={index < currentStepIndex}
-            />
-          ))}
-        </StepIndicator>
-      </SheetHeader>
+        <SheetHeader>
+          {currentStepIndex > 0 && (
+            <BackButton onClick={prevStep} aria-label="Voltar" disabled={isProcessing}>
+              <ArrowLeft size={20} />
+            </BackButton>
+          )}
+          <SheetTitle>{STEP_TITLES[state.step]}</SheetTitle>
+          <StepIndicator>
+            {STEP_ORDER.map((step, index) => (
+              <StepDot
+                key={step}
+                $isActive={index === currentStepIndex}
+                $isCompleted={index < currentStepIndex}
+              />
+            ))}
+          </StepIndicator>
+        </SheetHeader>
 
-      <SheetContent>
-        {renderStepContent()}
-      </SheetContent>
+        <SheetContent>
+          {renderStepContent()}
+        </SheetContent>
 
-      <SheetFooter>
-        <Button
-          fullWidth
-          size="lg"
-          onClick={handleNext}
-          disabled={!canProceed()}
-        >
-          {STEP_BUTTONS[state.step]}
-        </Button>
-      </SheetFooter>
-    </SheetWrapper>
+        <SheetFooter>
+          <Button
+            fullWidth
+            size="lg"
+            onClick={handleNext}
+            disabled={!canProceed()}
+          >
+            <ButtonContent>
+              {isProcessing ? (
+                <>
+                  <Spinner />
+                  Processando...
+                </>
+              ) : (
+                STEP_BUTTONS[state.step]
+              )}
+            </ButtonContent>
+          </Button>
+        </SheetFooter>
+      </SheetWrapper>
+
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <ToastOverlay onClick={handleToastClose}>
+          <ToastCard onClick={(e) => e.stopPropagation()}>
+            <ToastIcon>
+              <Check size={32} />
+            </ToastIcon>
+            <ToastTitle>Viagem Confirmada!</ToastTitle>
+            <ToastMessage>{successMessage}</ToastMessage>
+            <Button fullWidth onClick={handleToastClose}>
+              Entendido
+            </Button>
+          </ToastCard>
+        </ToastOverlay>
+      )}
+    </>
   );
 }

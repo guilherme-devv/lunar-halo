@@ -1,120 +1,150 @@
-import { Navigation, MapPin, Clock, Calendar, Dog, Cat } from 'lucide-react';
-import { useTheme } from 'styled-components';
+import { Clock, MapPin, Navigation, PawPrint } from 'lucide-react';
+import { useMockDataSync } from '../../hooks';
+import { calculateEstimate, formatCurrency } from '../../services/pricing.mock';
 import type { RideState } from '../../context/RideContext';
-import { useMockDataSync, type Pet, type RideParams } from '../../hooks';
 import {
   SummaryWrapper,
-  SummarySection,
-  SectionLabel,
   SummaryCard,
-  CardIcon,
-  CardContent,
-  CardTitle,
-  CardSubtitle,
-  PetChips,
-  PetChip,
-  PriceCard,
-  PriceLabel,
-  PriceValue,
+  SectionLabel,
+  RouteContainer,
+  RouteTimeline,
+  RouteIcon,
+  RouteLine,
+  RouteStops,
+  RouteStop,
+  RouteStopLabel,
+  RouteStopAddress,
+  InfoRow,
+  InfoText,
+  PetBadge,
+  BreakdownList,
+  BreakdownItem,
+  BreakdownLabel,
+  BreakdownValue,
+  TotalRow,
+  TotalLabel,
+  TotalValue,
+  RouteInfoBadge,
 } from './styles';
 
 export interface RideSummaryProps {
   state: RideState;
+  distanceKm?: number;
+  durationMin?: number;
 }
 
-export function RideSummary({ state }: RideSummaryProps) {
-  const theme = useTheme();
-  const allPets = useMockDataSync('pets') as Pet[];
-  const rideParams = useMockDataSync('rideParams') as RideParams;
+export function RideSummary({ state, distanceKm = 5, durationMin }: RideSummaryProps) {
+  const pets = useMockDataSync('pets') || [];
+  const selectedPetNames = pets
+    .filter((pet) => state.selectedPets.includes(pet.id))
+    .map((pet) => pet.name);
 
-  const selectedPetDetails = allPets?.filter((pet) =>
-    state.selectedPets.includes(pet.id)
-  ) || [];
-
-  // Calculate estimated price (mock calculation)
-  const estimatedDistance = 5.2; // km (mock)
-  const estimatedPrice = Math.max(
-    rideParams?.minPrice || 10,
-    estimatedDistance * (rideParams?.pricePerKm || 2.5)
-  );
-
-  const getScheduleText = () => {
+  // Format date/time
+  const formatDateTime = () => {
     if (state.schedule.isImmediate) {
       return 'Agora';
     }
     if (state.schedule.date) {
-      return `${state.schedule.date.toLocaleDateString('pt-BR')} às ${state.schedule.date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+      return new Intl.DateTimeFormat('pt-BR', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      }).format(state.schedule.date);
     }
-    return 'Não definido';
+    return 'Agora';
   };
+
+  // Calculate pricing
+  const estimate = calculateEstimate(distanceKm, state.selectedPets.length);
 
   return (
     <SummaryWrapper>
-      {/* Route Section */}
-      <SummarySection>
+      {/* Route Card */}
+      <SummaryCard>
         <SectionLabel>Rota</SectionLabel>
-        <SummaryCard>
-          <CardIcon $color={theme.colors.primary}>
-            <Navigation size={20} />
-          </CardIcon>
-          <CardContent>
-            <CardSubtitle>Partida</CardSubtitle>
-            <CardTitle>{state.origin?.address || 'Não definido'}</CardTitle>
-          </CardContent>
-        </SummaryCard>
-        <SummaryCard>
-          <CardIcon $color={theme.colors.secondary}>
-            <MapPin size={20} />
-          </CardIcon>
-          <CardContent>
-            <CardSubtitle>Destino</CardSubtitle>
-            <CardTitle>{state.destination?.address || 'Não definido'}</CardTitle>
-          </CardContent>
-        </SummaryCard>
-      </SummarySection>
+        <RouteContainer>
+          <RouteTimeline>
+            <RouteIcon $variant="origin">
+              <Navigation size={14} />
+            </RouteIcon>
+            <RouteLine />
+            <RouteIcon $variant="destination">
+              <MapPin size={14} />
+            </RouteIcon>
+          </RouteTimeline>
+          <RouteStops>
+            <RouteStop>
+              <RouteStopLabel>Partida</RouteStopLabel>
+              <RouteStopAddress>
+                {state.origin?.address || 'Origem não selecionada'}
+              </RouteStopAddress>
+            </RouteStop>
+            <RouteStop>
+              <RouteStopLabel>Destino</RouteStopLabel>
+              <RouteStopAddress>
+                {state.destination?.address || 'Destino não selecionado'}
+              </RouteStopAddress>
+            </RouteStop>
+          </RouteStops>
+        </RouteContainer>
 
-      {/* Pets Section */}
-      <SummarySection>
-        <SectionLabel>Pets ({selectedPetDetails.length})</SectionLabel>
-        <PetChips>
-          {selectedPetDetails.map((pet) => {
-            const PetIcon = pet.species === 'cat' ? Cat : Dog;
-            return (
-              <PetChip key={pet.id}>
-                <PetIcon size={14} />
-                {pet.name}
-              </PetChip>
-            );
-          })}
-        </PetChips>
-      </SummarySection>
-
-      {/* Schedule Section */}
-      <SummarySection>
-        <SectionLabel>Quando</SectionLabel>
-        <SummaryCard>
-          <CardIcon $color={theme.colors.success}>
-            {state.schedule.isImmediate ? <Clock size={20} /> : <Calendar size={20} />}
-          </CardIcon>
-          <CardContent>
-            <CardTitle>{getScheduleText()}</CardTitle>
-            {!state.schedule.isImmediate && state.schedule.date && (
-              <CardSubtitle>Viagem agendada</CardSubtitle>
+        {(distanceKm || durationMin) && (
+          <RouteInfoBadge>
+            <MapPin size={14} />
+            <span>{distanceKm?.toFixed(1)} km</span>
+            {durationMin && (
+              <>
+                <span>•</span>
+                <Clock size={14} />
+                <span>{Math.round(durationMin)} min</span>
+              </>
             )}
-          </CardContent>
-        </SummaryCard>
-      </SummarySection>
+          </RouteInfoBadge>
+        )}
+      </SummaryCard>
 
-      {/* Price Section */}
-      <PriceCard>
-        <PriceLabel>Valor estimado</PriceLabel>
-        <PriceValue>
-          {new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-          }).format(estimatedPrice)}
-        </PriceValue>
-      </PriceCard>
+      {/* Details Card */}
+      <SummaryCard>
+        <SectionLabel>Detalhes</SectionLabel>
+
+        <InfoRow style={{ marginBottom: '12px' }}>
+          <Clock size={18} />
+          <InfoText>{formatDateTime()}</InfoText>
+        </InfoRow>
+
+        <InfoRow>
+          <PawPrint size={18} />
+          <InfoText>
+            {selectedPetNames.length > 0 ? (
+              selectedPetNames.map((name, idx) => (
+                <PetBadge key={name} style={{ marginRight: idx < selectedPetNames.length - 1 ? 8 : 0 }}>
+                  {name}
+                </PetBadge>
+              ))
+            ) : (
+              'Nenhum pet selecionado'
+            )}
+          </InfoText>
+        </InfoRow>
+      </SummaryCard>
+
+      {/* Pricing Card */}
+      <SummaryCard>
+        <SectionLabel>Valores</SectionLabel>
+
+        <BreakdownList>
+          {estimate.breakdown.map((item, idx) => (
+            <BreakdownItem key={idx}>
+              <BreakdownLabel>{item.label}</BreakdownLabel>
+              <BreakdownValue>{formatCurrency(item.value)}</BreakdownValue>
+            </BreakdownItem>
+          ))}
+        </BreakdownList>
+
+        <TotalRow>
+          <TotalLabel>Total</TotalLabel>
+          <TotalValue>{estimate.formattedTotal}</TotalValue>
+        </TotalRow>
+      </SummaryCard>
     </SummaryWrapper>
   );
 }

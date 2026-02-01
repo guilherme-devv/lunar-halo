@@ -9,6 +9,7 @@ export const theme = {
     text: {
       primary: '#09090B',
       secondary: '#71717A',
+      tertiary: '#A1A1AA',
       inverse: '#FFFFFF',
     },
   },

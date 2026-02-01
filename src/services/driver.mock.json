@@ -1,0 +1,22 @@
+{
+  "id": "drv_01",
+  "name": "Roberto Silva",
+  "rating": 4.9,
+  "photo": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+  "phone": "+55 11 98765-4321",
+  "vehicle": {
+    "model": "Fiat Fiorino Adaptada",
+    "plate": "PET-1234",
+    "color": "Branco",
+    "year": 2022
+  },
+  "position": {
+    "lat": -23.555,
+    "lng": -46.635
+  },
+  "stats": {
+    "totalRides": 847,
+    "petsTransported": 1523,
+    "memberSince": "2022-03-15"
+  }
+}
